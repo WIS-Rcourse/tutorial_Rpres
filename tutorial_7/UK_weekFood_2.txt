@@ -1,0 +1,22 @@
+Description	Units	North East	North West	Yorks. & The Humber	East Midlands	West Midlands	East	London
+Milk and milk products excluding cheese	ml	1821	1819	1851	1924	1827	1846	1575
+Cheese	g	110	111	122	127	110	135	109
+Carcase meat	g	181	167	181	243	179	200	169
+Non-carcase meat and meat products	g	843	830	794	784	775	800	607
+Fish	g	124	127	152	142	134	155	146
+Eggs	no.	2	2	2	2	2	2	2
+Fats	g	151	163	146	168	157	153	158
+Sugar and preserves	g	101	95	102	138	110	107	97
+Fresh and processed potatoes	g	686	669	663	731	701	663	510
+"Fresh and processed vegetables, excluding potatoes"	g	966	1028	1131	1240	1083	1204	1164
+Fresh and processed fruit	g	877	1013	1042	1137	1031	1146	1222
+Bread	g	542	564	515	578	557	527	444
+Flour	g	34	48	49	113	97	52	108
+"Cakes, buns and pastries"	g	145	150	152	173	156	164	133
+Biscuits and crispbreads	g	181	155	167	174	179	165	139
+Other cereals and cereal products	g	561	551	571	567	560	591	614
+Beverages	g	53	55	49	61	52	58	42
+Other food and drink	g	743	840	779	816	827	860	1022
+Soft drinks	ml	1703	1562	1508	1637	1692	1677	999
+Confectionery	g	153	135	130	143	136	146	90
+Alcoholic drinks	ml	823	883	785	802	662	761	425

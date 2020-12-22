@@ -1,0 +1,177 @@
+---
+title: "Weekly Exercise 6"
+author: "YOUR_NAME"
+output:
+  html_document: 
+    df_print: default
+    theme: cerulean
+    toc: yes
+    code_folding: show
+    toc_float: TRUE
+    self_contained: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Notes
+
+As now you already are familiarized with the basics of programming in R. 
+From now on we are going to give you more general instructions to do the 
+exercises, instead of step by step. So that you start to make your own decisions
+on how to call your variables and how exactly you want to achieve the tasks.
+
+For the following tasks, you will be asked to submit a .Rmd file, also known as
+"R notebook". This code can be rendered by R into different publication 
+formats. The upper part of this file is called "YAML header" and has some main 
+options to render the notebook. The options in html_document: will tell R how 
+to output the document as an HTML page (do not change that for submitting your 
+exercises correctly).
+
+At the end of the exercise you will find questions, for which you will need
+to print the answers based on your code.
+
+For submitting the exercise check the following guidelines:
+
+1. Change the author option "YOUR_NAME" in the upper part of this file with your 
+name.
+2. Use only the code chunks to write your code, and the bottom part to write
+your answers to the questions.
+3. If you got slightly different plots to ours and don't manage 
+to get the same plot as we do, don't frustrate and spend to much time to make 
+it look identical. What we are most interested in is evaluating that you can do
+the task and that your programming logic is sound (There is also a very small 
+chance we mess things up at some point so don't attempt to make an identical
+copy of our results ;) ).
+4. We ask you to store the answer to some questions in the objects `ANSWERX`;
+**use the code to store the answer, do not simply write the answer!**. If you do
+this, we will consider it WRONG!
+5. DO NOT leave in the code any unnecessary code such as View() and head()
+that makes running and knitting the script clumsy.
+
+```{r, Global Options, echo = F}
+knitr::opts_chunk$set(warning = F, message = F, echo = T) # Don't change this
+```
+
+# 0. Load your packages
+
+Load the packages you will use in this section.
+
+```{r, Packages}
+# YOUR CODE
+```
+
+# 1. Data wrangling (or fixing the data)
+
+We are going to use a dataset from the United Kingdom government. 
+The data set describes the average weekly intake of diverse products by region.
+Our goal is to appreciate differences and pinpoint what are the products that
+are the main drive for **differences between regions**.
+
+(A) Load the tables "UK_weekFood_1.txt" and "UK_weekFood_2.txt" so that the first 
+row in the file is the column names and that the first column is the rownames.
+(B) Remove the units column in both datasets.
+(C) Create a table that contains the data of all 13 cities, and shared food
+categories that are in both datasets. You could use: `intersect()`, `match()`, `[`.
+(E) Answer Question 1 using `setdiff()`, and store your answer in the object 
+`ANSWER1`.
+
+**Note: Understand what happens when you change the order of sets in the**
+**setdiff function**
+
+```{r, Data wrangling}
+# YOUR CODE
+ANSWER1 <- "YOURCODE"
+```
+
+# 2. Principal Components Analysis.
+
+The full data with ingredients present in both files should be a dataframe
+that has 19 food categories, and 13 regions. This essentially is explaining 13
+data points by 19 dimensions. 
+
+But we cannot easily visualize data in 19 dimensions, that is why we require 
+mathematical tools like Principal Components Analysis (PCA) to transform the 
+data and extract the more informative set of 'new dimensions', called Principal 
+Components.
+
+(A) To be able to run the PCA, first transpose the data so that food categories 
+are the columns. (Important as PCA runs in the columns).
+(B) Use the `prcomp()` function to perform a PCA on the data.
+(C) Plot the first two principal components of the resulting new data object.
+(D) Add a text label to each point by using the function `text()`, which works as
+plotting dots in x and y coordinates but instead of dots writes words, and its 
+arguments `cex` [numeric], `pos` [integer 1 to 4] and `col` [color code]. The
+resulting plot does NOT need to look identical to the example plot, just make sure
+that the labels of points make sense in the position they are.
+(E) Answer question 2. Store your answer in the object ANSWER2.
+
+```{r, Principal Components Analysis, fig.width= 6, fig.height=6}
+# YOUR CODE
+ANSWER2 <- "YOURCODE"
+```
+
+# 3. Looking for the most correlated (or anti correlated) variable
+
+Now to understand were does most of the variability comes from we can look for
+the most correlated variable to the first principal component. 
+
+(A) Calculate the correlation between the PC1 and each of the variables. 
+You can calculate this with the `cor()` function.
+(B) Determine which is the most correlated (or anticorrelated variable). Remember
+use functions to make your life easier. `cor()`, `abs()`, `which.max()`, `sort()`
+are some examples of functions you can use to help you with this task. 
+Store your answer to QUESTION3 in the object `ANSWER3`.
+(C) Plot a scatterplot of the variable you found as a function of the PC1.
+
+Notes: Instead of "Mistery Food" as ylab, write the name of the variable 
+you found. If you want to adjust the `blue` color use `adjustcolor()` is optional.
+
+```{r, Most correlated variable, fig.width=6, fig.height=6}
+# YOUR CODE
+ANSWER3 <- "YOURCODE"
+```
+
+(D) OPTIONAL: Try to make the same scatterplot using ggplot. If you run into
+trouble try to follow this 
+[Quick guide](http://www.sthda.com/english/wiki/ggplot2-scatter-plots-quick-start-guide-r-software-and-data-visualization)
+to troubleshoot your issues. Additionally you can adjust the range of the axis
+using the `scale_x_continuous()` and `scale_y_continuous()` functions, this to
+show the full labels (optional).
+
+```{r, with ggplot, fig.width=6, fig.height=6}
+# YOUR CODE
+```
+
+# Questions
+
+By previously storing your answers on the `ANSWER1`, `ANSWER2`, `ANSWER3` objects
+Rmarkdown will subtitute the lines bellow with the content of the object in 
+the document.
+
+* Q1: Which are the missing food categories? 
+
+A: **`r ANSWER1`**
+
+* Q2: How much variance does the PC1 explain?
+
+A: **`r ANSWER2`**
+
+* Q3: Which food category is the most correlated to PC1?
+
+A: **`r ANSWER3`**
+
+
+# Credits
+
+Authors:
+
+* Benjamin Dubreuil
+* [Miguel Angel Garcia-Campos](https://angelcampos.github.io/)
+* Yaara Finkel
+* Hugo Schweke
+
+
+Original data from:
+
+* UK's government site: https://www.gov.uk/government/statistical-data-sets/family-food-datasets
+* Direct link: https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/830364/ConsGORHH_12sep19.ods

@@ -1,0 +1,20 @@
+Description	Units	South East	South West	England	Wales	Scotland 	Northern Ireland
+Milk and milk products excluding cheese	ml	1768	1967	1805	1883	1678	2003
+Flour	g	57	61	70	36	32	30
+"Cakes, buns and pastries"	g	157	172	155	143	140	192
+Biscuits and crispbreads	g	164	177	164	171	163	181
+Fresh and processed potatoes	g	652	664	649	687	615	1063
+"Fresh and processed vegetables, excluding potatoes"	g	1217	1274	1156	1077	957	917
+Fresh and processed fruit	g	1193	1259	1124	996	1039	957
+Bread	g	520	537	526	595	545	638
+Other cereals and cereal products	g	570	571	575	504	559	546
+Beverages	g	51	62	53	47	47	58
+Other food and drink	g	829	832	852	885	876	872
+Soft drinks	ml	1504	1453	1494	1664	1974	1660
+Confectionery	g	129	139	130	140	154	158
+Alcoholic drinks	ml	690	737	710	708	662	668
+Cheese	g	136	142	123	106	123	92
+Carcase meat	g	186	177	185	155	155	240
+Non-carcase meat and meat products	g	717	787	757	813	781	917
+Fish	g	156	140	143	119	128	129
+Fats	g	151	153	155	146	129	163
