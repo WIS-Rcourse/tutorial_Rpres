@@ -1,0 +1,184 @@
+---
+title: "MHT p value correction"
+author: "Miguel García"
+date: "21/12/2021"
+output:
+  html_document: 
+    df_print: default
+    theme: cerulean
+    toc: yes
+    code_folding: show
+    toc_float: TRUE
+    self_contained: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, collapse=T,include =T)
+```
+
+# Multiple Hypothesis, why correcting?
+
+One of the main points on why to perform Multiple Hypothesis p Value correction
+comes when simulating experiments and their outcome.
+
+In tutorial #10 I showed you how you can do the following:
+
+1) Generate two samples from the same theoretical normal distribution.
+2) Test for differences on the mean in either direction from both samples, using
+the [Student's t-test](https://en.wikipedia.org/wiki/Student's_t-test).
+
+In theory the samples should have the same mean and there should be no 
+differences, but due to random sampling we can by chance pick measurements that
+are very different from one another and seem that they come from different 
+distributions, or populations.
+
+If we extract the p value of the tests and check for how many are bellow our
+singnificance level of \alpha 0.05, we will observe that it is close to 5%
+
+The code bellow runs ten thousand tests sampling 10 "measurements" from
+the same distribution with a mean value of 100 and standard deviation of 10. 
+This would be akin to measure ten thousand genes in treatment and control and
+test for differences *-If genes expression distributed normally, which they DON'T-*.
+
+> *For practical purposes we are using the same mean but in real experiments 
+the mean for each feature can be different and we will have the same outcome*
+
+```{r}
+# Here is a function that makes everything in one go.
+MHE <- function(nFeatures, nSample, popMean1, popMean2, popSD){
+  DF <- data.frame(raw = unlist(lapply(1:nFeatures, function(x){
+    smp1 <- rnorm(nSample, popMean1, popSD)
+    smp2 <- rnorm(nSample, popMean2, popSD)
+    t.test(smp1, smp2)$p.value
+  })))
+  return(DF)
+}
+
+nFeat <- 1e4 # Number of features
+alpha <- 0.05
+
+set.seed(2020)
+pVals <- MHE(nFeatures = nFeat, nSample = 10, popMean1 = 100, popMean2 = 100, popSD = 10)
+sum(pVals$raw < alpha) / nFeat
+```
+
+Plotting the distribution of the p values we can appreciate that they distribute
+uniformly, we have almost the same chance of having a p-value between 0 and 0.1
+and between 0.9 and 1. 
+
+We can visualize this by ploting the histogram and Empirical Cumulative 
+Distribution Function (ECDF) of the p values distribution, and appreciate that 
+the latter is like a straight line from 0,0 to 1,1, which means that as there is
+roughly the same chance of falling at any interval.
+
+```{r, fig.height = 3}
+hist(pVals$raw, main = "Histogram of p Values")
+plot(ecdf(pVals$raw), main = "ECDF of p Values")
+```
+
+
+At the 5% confidence level running 100 tests we will expect on average
+around 0.05 x 100 = 5 false discoveries. The chance of having an experiment
+with at least one false discovery under this conditions is `r round(1 - (1 - 0.05)^100, 4)`.
+This is the Family Wise Error Rate.
+
+If m independent comparisons are performed at a 0.05 confidence level,
+the family-wise error rate (FWER), is given by the formula
+
+$$ FWER = 1 - (1 - 0.05 )^m  $$
+
+In our case with 10000 tests FWER = 1 - 1.722078e-223, virtually zero chances
+of having an experiment with false discoveries. Having false discoveries is 
+undesirable but so is also not having the ability to come with plaussible 
+statistically validated discoveries, which prompted the need to control for
+this theorical impasse. 
+
+# Multiple Testing correction
+
+## Bonferroni Correction (1936)
+
+The Bonferroni correction attempts to bring the FWER to the initial confidence
+level value. So that only 5% of experiments run as set before have false 
+discoveries.
+
+To achieve this each test is evaluated at a confidence value divided by the
+number of tests. Which is equivalent to multiply the p values by the number
+of tests and evaluate at the original confidence value.
+
+In R we can adjust p values with `p.adjust()`. For the Bonferroni method
+we declare it in the argument as bellow.
+
+```{r}
+pVals$bonferroni <- p.adjust(pVals$raw, method = "bonferroni")
+```
+
+Now we have `r sum(pVals$bonferroni < 0.05)` p values that are smaller than
+the confidence level. Which is good as in our original example there
+are no difference between sample populations.
+
+But what if we truly have different means in the population? We can run the
+same simulation but with popMean1 = 100 and popMean2 = 120, a relatively large 
+difference. 
+
+```{r}
+pVals2 <- MHE(nFeatures = nFeat, nSample = 10, popMean1 = 100, popMean2 = 120, popSD = 10)
+pVals2$bonferroni <- p.adjust(pVals2$raw, method = "bonferroni")
+mean(pVals2$bonferroni < 0.05)
+```
+
+Yet only in around 8% of the tests we can reject the null hypothesis, which in 
+reality all of them had to be rejected, there was a difference!
+
+Bonferroni correction is too conservative and losing so many true discoveries
+is not desirable on many instances, as biological research.
+
+## Hochberg (1988)
+
+Developed by Yosef Hochber in [1988](http://www-stat.wharton.upenn.edu/~steele/Courses/956/Resource/MultipleComparision/Hochberg88.pdf)
+
+Hochberg (1988) presents a procedure in which the p values are evaluated from
+biggest to smallest. The biggest p value is evaluated with the original 
+confidence level (α), if the p values is smaller then all subsequent 
+hypothesis are rejected, if not the next biggest p-value is tested with 
+a confidence level of α/2, and so on.
+
+This would be similar to multiplying the smallest p value by the number of 
+tests, then the second p value by the number of tests minus 1, and so on
+until this operation yields a bigger number than the biggest original p value
+at which point all subsequent p values will be assigned that same p value.
+
+## Benjamini-Hochberg 1995
+
+Developed by Yoav Benjamini and Yosef Hochberg in 
+[1995](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1995.tb02031.x)
+
+
+```{r}
+pVals <- data.frame(raw = unlist(lapply(1:10000, function(x){
+    smp1 <- rnorm(3, 100, 1)
+    smp2 <- rnorm(3, 105, 1)
+    t.test(smp1, smp2)$p.value
+})))
+pVals$bonferroni <- p.adjust(pVals$raw, method = "bonferroni")
+pVals$fdr <- p.adjust(pVals$raw, method = "fdr")
+pVals$hochberg <- p.adjust(pVals$raw, method = "hochberg")
+
+pVals <- pVals[order(pVals),]
+sum(pVals$bonferroni < 0.05)
+sum(pVals$hochberg < 0.05)
+sum(pVals$fdr < 0.05)
+plot(pVals$bonferroni, pVals$hochberg)
+plot(pVals$bonferroni, pVals$fdr)
+View(pVals)
+boxplot(-log10(pVals), main = "pValues, raw and after correcting")
+abline(h = -log10(0.05), col = "blue")
+```
+
+
+# Credits
+
+Authors:
+
+* [Miguel García](https://angelcampos.github.io/)
