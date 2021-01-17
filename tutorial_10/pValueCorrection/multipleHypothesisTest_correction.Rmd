@@ -95,7 +95,7 @@ undesirable but so is also not having the ability to come with plaussible
 statistically validated discoveries, which prompted the need to control for
 this theorical impasse. 
 
-# Multiple Testing correction
+# FWER controlling
 
 ## Bonferroni Correction (1936)
 
@@ -148,6 +148,14 @@ This would be similar to multiplying the smallest p value by the number of
 tests, then the second p value by the number of tests minus 1, and so on
 until this operation yields a bigger number than the biggest original p value
 at which point all subsequent p values will be assigned that same p value.
+
+# 
+
+Both Bonferroni and Hochberg's FWER control procedures are directed towards
+controlling the chance of having at least one false discovery. But what if
+we control for the rate of false discoveries?, this is, control the proportion
+of potentially false discoveries while testing multiple hypothesis. This type 
+of procedures are 
 
 ## Benjamini-Hochberg 1995
 
