@@ -20,25 +20,43 @@ knitr::opts_chunk$set(echo = T, collapse=T,include =T)
 
 **Author: [Miguel García](https://angelcampos.github.io/)**
 
+[Multiple hypothesis testing](https://en.wikipedia.org/wiki/Multiple_comparisons_problem#Definition) 
+(MHT) occurs when a statistical analysis involves multiple simultaneous statistical
+tests, each of which has a potential to produce a "discovery" (namely, rejecting
+the null hypothesis), on the **same dataset**. A common example in the Life Sciences field arose when
+we were able to measure multiple genes in the same experiment and we wanted to
+know which genes were differentially expressed between control and a treatment
+groups; but it could apply to any experiment in which we obtain measurements
+for multiple features and we want to perform a statistical test for each of the 
+features. Nevertheless when performing MHT a problem arises.
+
+The so called [Multiple comparison problem](https://en.wikipedia.org/wiki/Multiple_comparisons_problem),
+a.k.a. [Look-elsewhere effect](https://en.wikipedia.org/wiki/Look-elsewhere_effect),
+is that **the more inferences are made, the more likely erroneous**
+**inferences are to occur**. Several statistical techniques have been developed 
+to prevent this from happening, allowing significance levels for single and 
+multiple comparisons to be directly compared. These techniques generally 
+require a stricter significance threshold for individual comparisons,
+to compensate for the number of inferences being made. We can also see this 
+methods as a way to **correct the p Values** obtained from the MHT procedure.
+To further understand the multiple comparison problem I have prepared the 
+following material to simulate MHT experiments and their outcomes when we are 
+expecting normally distributed values (similar approaches would apply to data 
+from other theorethical distributions).
+
 # Multiple Hypothesis, why correcting?
 
-One of the main points on why to perform Multiple Hypothesis Testing (MHT) p Value
-correction becomes evident when simulating experiments and their outcome.
+Multiple Hypothesis Testing (MHT) p Value correction becomes evident when 
+simulating experiments with known distributions and their outcome.
 
-In tutorial #10 I showed you how you can do the following:
+The MHE() function bellow simulates a MHT experiment, creates **nFeatures**
+sampling **nSample** "measurements" from two *normal distributions* with means **popMean1** 
+and **popMean2** with a standard deviation of **popSD** for both cases; then 
+it calculates a p Value with a t-test for each feature. The output of the function
+is a dataframe of the resulting p Values for each feature in the column **raw**,
+which stands for p Values that have not been corrected.
 
-1) Generate two samples from the same theoretical normal distribution.
-2) Test for differences on the mean in either direction from both samples, using
-the [Student's t-test](https://en.wikipedia.org/wiki/Student's_t-test).
-
-In theory the samples should have the same mean and there should be no 
-differences, but due to chance we can pick measurements that are very different
-from one another and seem that they come from different distributions, or populations.
-
-The MHE() function bellow creates *nFeatures* sampling *nSample* "measurements"
-from two normal distributions *popMean1* and *popMean2*  with a standard 
-deviation of *popSD* in both cases; then calculates a p Value with a t-test. 
-This function will help us create artificial data and p Values.
+This function will help us create artificial data and p Values here on.
 
 ```{r}
 MHE <- function(nFeatures, nSample, popMean1, popMean2, popSD){
@@ -50,26 +68,30 @@ MHE <- function(nFeatures, nSample, popMean1, popMean2, popSD){
 }
 ```
 
-In the following example we create 10000 features with both populations 
-having a mean value of 100, which would be akin to measure ten thousand genes in treatment and control and
-test for differences *(If genes expression distributed normally, which they DON'T)*.
+In the following example we create 10'000 features with both theoretical populations 
+having the same mean value of 100, which would be akin to measure ten thousand genes 
+in treatment and control, when the treatment has no effect at all, and test for differences
+
+> Gene counts from RNA-seq methods do not distribut normally, currently one 
+of the theoretical distributions to model gene counts is the [Negative binomial
+distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution) 
+but for practical purposes here we use the normal distribution.
+
+In theory the samples should have the same mean and there should be no 
+differences, but due to chance we can pick measurements that are very different
+from one another and seem that they come from different distributions. When
+applying a t-test to such samples we will obtain a small p-value. Using
+a statistical threshold \alpha = 0.05 we guard against false postives 95%
+of the times, when performing only one inference.
 
 > *For practical purposes we are using the same mean for all feature simulations
 but in real experiments the mean for each feature can be different yet we will
 have the same outcome.*
 
 ```{r}
-set.seed(2020)
+set.seed(2020) # Seed for reproducibility purposes
 nFeat <- 1e4 # Number of features
 pVals <- MHE(nFeatures = nFeat, nSample = 10, popMean1 = 100, popMean2 = 100, popSD = 10)
-```
-
-If we check the proportion of tests with a p Value bellow a
-singnificance threshold of \alpha = 0.05, we will observe that it is close to 5%.
-
-```{r}
-alpha <- 0.05
-sum(pVals$raw < alpha) / nFeat
 ```
 
 Plotting the distribution of the p values we can appreciate that they distribute
@@ -80,37 +102,50 @@ and between 0.9 and 1.
 hist(pVals$raw, main = "Histogram of p Values")
 ```
 
+If we check the proportion of tests with a p Value bellow a
+singnificance threshold of \alpha = 0.05, we will observe that it is close to 5%,
+which is similar to our alpha. It should become now evident how a p Value tries 
+to control for False positives, as due to chance we can obtain a discovery 
+where there should not be.
+
+```{r}
+alpha <- 0.05
+sum(pVals$raw < alpha) / nFeat
+```
+
 By ploting the Empirical Cumulative Distribution Function (ECDF) of the p values
-distribution, we appreciate that is like a straight line from 0,0 to 1,1, 
-which means that there is roughly the same chance of falling at any interval.
+distribution, we appreciate that is like a straight line from 0,0 to 1,1. 
+This indicates that there is roughly the same chance of falling at any interval.
 
 ```{r, fig.height = 3}
 plot(ecdf(pVals$raw), main = "ECDF of p Values")
 ```
 
-At the 5% confidence level running 100 independent tests we will expect on average
-around 0.05 x 20 = 5 false discoveries, even when there are no effects whatsoever.
-What happens when we perform much more tests? How many times would we have
-at least one false discovery? 
+If we wanted to know the probability of our MHT experiments that will have false 
+discoveries using \alpha and no correction we would be calculating the 
+[Family-wise Error Rate (FWER)](https://en.wikipedia.org/wiki/Family-wise_error_rate)
 
-If m independent comparisons are performed at a 0.05 confidence level,
-the family-wise error rate (FWER), is given by the formula
+The FWER, is given by the formula:
 
-$$ FWER = 1 - (1 - 0.05 )^m  $$
+$$ FWER = 1 - (1 - \alpha )^m  $$
+
+When  ***m*** independent comparisons are performed at a **\alpha** confidence level,
 
 In our original case with 10'000 tests FWER = 1 - 1.722078e-223, which means
-that virtually our experiment will ALWAYS have false discoveries. 
+that virtually our experiment will ALWAYS have false discoveries; and when 
+there are too many false discoveries it will be hard to set a threshold to tell
+which ones are real and which are not.
+
 Having false discoveries is undesirable but more so is never having the ability
 to come with plaussible statistically validated discoveries, which prompts the 
 need to control for this theoretical impasse.
 
-# FWER controlling
+# Family-wise Error Rate (FWER) control
 
-## Bonferroni Correction (1936)
+## Bonferroni correction method
 
 The Bonferroni correction attempts to bring the FWER to the initial confidence
-level value. So that only 5% of experiments run with multiple hypothesis testing
-have false discoveries.
+level value. So that only 5% of our experiments run with MHT have false discoveries.
 
 To achieve this each test is evaluated at a confidence value divided by the
 number of tests. Which is equivalent to multiply the p values by the number
@@ -129,6 +164,7 @@ bonferroni_correction <- function(p){
 }
 ```
 
+And then apply it to our "raw" p Values.
 
 ```{r}
 pVals$bonferroni <- bonferroni_correction(pVals$raw)
@@ -137,11 +173,18 @@ sum(pVals$bonferroni < 0.05)
 
 Now we have `r sum(pVals$bonferroni < 0.05)` p values that are smaller than
 the confidence level. Which is good as in our original example there
-are no difference between sample populations.
+are no difference between sample populations. By using the Bonferroni 
+correction method we have made it less likely to have a false discovery, we 
+would need to perform hundreds of MHT experiments to again reach to the 
+expected 5% chance of having at least one false discovery in the whole experiment.
 
 But what if we truly have different means in the population? We can run the
 same simulation but with popMean1 = 100 and popMean2 = 120, a relatively large 
-difference. 
+difference, and then apply the bonferroni correction to prevent false discoveries.
+
+> Remember: In these simulations we know that the means of the populations are 
+indeed different but in real experiments we don't, so we still would need to
+apply a p Value correction method.
 
 ```{r}
 pVals2 <- MHE(nFeatures = nFeat, nSample = 10, popMean1 = 100, popMean2 = 120, popSD = 10)
@@ -150,17 +193,18 @@ mean(pVals2$bonferroni < 0.05)
 ```
 
 In this example, around 8% of the tests are able to reject the null hypothesis 
-after using the Bonferroni correction. When in reality all of them should have 
-been rejected!
+after using the Bonferroni correction. **When in reality all of them should have**
+**been rejected!**
 
 Bonferroni correction is too conservative and losing so many true discoveries
-is not desirable on many instances, as Life Sciences research in which millions
-of dollars are spent to find therapeutic targets.
+is not desirable on many instances, specially if obtaining the data requires
+a lot of resources, as Life Sciences research. That is why other methods
+have to be developed.
 
-## Hochberg (1988)
+## Hochberg correction method
 
 Yosef Hochber in [1988](http://www-stat.wharton.upenn.edu/~steele/Courses/956/Resource/MultipleComparision/Hochberg88.pdf)
-presented a slightly more powerful procedure (able to detect real differences
+presented a slightly more powerful procedure (able to detect more real differences
 than bonferroni) in which the p values are evaluated from biggest to 
 smallest. 
 
@@ -192,33 +236,37 @@ Now we can use Hochberg's correction method and see the proportion of rejected
 hypothesis
 
 ```{r}
+pVals$hochberg <- hochberg_correction(pVals$raw) 
 pVals2$hochberg <- hochberg_correction(pVals2$raw) 
 mean(pVals2$hochberg < 0.05)
 ```
 
-We had an improvement, from ~8% to ~9% rejected null hypothesis. But still
+We had an improvement, from ~8% to ~9% rejected null hypothesis. Still
 too conservative given that the measurements were taken from
-really different distributions. So there should be a way to be able to detect
+reasonably different distributions. So there should be a way to be able to detect
 more TRUE differences, but still correcting for the influence of doing 
-multiple testing.
+multiple testing. Maybe FWER control is too strict.
 
-# False Discovery Rate (FDR)
+# False Discovery Rate (FDR) control
 
 Both Bonferroni's and Hochberg's FWER control procedures are directed towards
 controlling the chance of having **at least one** false discovery. This method 
 of statistical control has proven too stringent and in many cases makes 
 impossible to detect plaussibly real differences in measurements. Reason
-why we need less stringent methods.
+why we needed other, perhaps less stringent, methods.
 
 What if we could be less stringent, but yet have a statistical basis to control
-for the proportion of false discoveries?
+for the proportion of false discoveries? Or in other words the 
+[False Discovery Rate](https://en.wikipedia.org/wiki/False_discovery_rate)
+(FDR).
 
 FDR-controlling procedures are designed to control the expected proportion of
 discoveries that are false positives (incorrect rejections of the 
-null hypothesis). Provide less stringent control of False Positives
-compared to FWER controlling procedures, but have greater power.
+null hypothesis) in a MHT procedure. These methods provide less stringent 
+control of False Positives compared to FWER-controlling methods, but have
+greater power.
 
-## Benjamini-Hochberg 1995
+## Benjamini-Hochberg method (FDR method)
 
 The FDR concept was formally described by Yoav Benjamini and Yosef Hochberg in
 [1995](https://www.jstor.org/stable/2346101?seq=4#metadata_info_tab_contents)
@@ -227,22 +275,22 @@ from the trivial many effects tested.
 
 The Benjamini-Hochberg FDR method has been particularly influential, as it was
 the first alternative to the FWER methods to gain broad acceptance in many 
-scientific fields, especially in Genomics, where experiments measuring thousands
-of genes started to appear in the late 90's early 2000's.
+scientific fields, especially in Genomics, where experiments measuring hundreds
+to thousands of genes started to appear.
 
 Altough the underlying theory can be daunting, the actual mathematical procedure
 is quite simple. And implemented in the function bellow.
 
 1. Order p-values from smallest to largest.
-2. Give a rank to the p-values. 1 to smallest n to largest.
-3. The largest p value stays the same
+2. Give a rank to the p-values (1 to smallest, n to largest).
+3. The largest p value stays the same.
 3. The next largest adjusted p-value is the smaller of two options:
   a) The previous adjusted p value.
   b) The original p value multiplied by the number of p Values divided by the rank
   of the p value we are adjusting.
 
-> A nice graphic illustation of this procedure can be found in a video by 
-StatQuest found on the references section at the end of this document.
+> A nice illustation of the underlying logic can be found in a video by Josh Starmer 
+(aka StatQuest) found on the references section at the end of this document.
 
 ```{r}
 # Benjamin Hochberg FDR correction implementation
@@ -263,14 +311,16 @@ BH_correction <- function(p){
 ```
 
 The resulting adjusted p values are called **q Values**. Once we have them we can apply 
-a threshold, which would be the rate of expected False discoveries. For 
+a threshold, which would be the rate of expected false discoveries. For 
 example a common used threshold for q Values is 0.1. If we then reject hypothesis
-that have a smaller q Value, we will expect to have 10% of false discoveries.
+that have a smaller q Value, we will expect to have 10% of false discoveries, 
+and 90% of true discoveries.
 
-If we apply the FDR correction to our two previous examples 1) No real difference,
-2) Different distributions, we can appreciate that we have succesfully 
+If we apply the FDR correction to our two previous examples 1) samples coming
+from the same distribution, and 2) samples coming from two different distributions,
+we can appreciate two effects: We have succesfully 
 eliminated the false discoveries in the case where there shouldn't be null 
-hypothesis rejection. And in the case were there are differences we now were 
+hypothesis rejection; and in the case were there are differences we now are 
 able to recover most of the real differences.
 
 ```{r}
@@ -281,9 +331,13 @@ FDR1 <- mean(pVals$FDR < 0.05)
 FDR2 <- mean(pVals2$FDR < 0.05)
 ```
 
+---
+
 Proportion of Q values bellow 0.05, when the samples are extracted from the **same** distribution = `r FDR1`
 
 Proportion of Q values bellow 0.05, when the samples are extracted from **different** distribution = `r FDR2`
+
+---
 
 We can see the effect of the corrected p values in the form of boxplots
 shown bellow. We apply a -10log-transformation to see small p Values more
@@ -297,6 +351,7 @@ abline(h = -log10(0.05), col = "blue", las = 2)
 
 As we can see many tests reject the null hypothesis when we don't make the 
 correction, even when samples come from the same distribution, just by chance!
+But after correcting this effect is lost.
 
 In the second example we sample from two different distributions, in which in
 principle we should reject the null hypothesis all the time, but when applying
@@ -325,16 +380,16 @@ p.adjust(pVals$raw, method = "hochberg")
 p.adjust(pVals$raw, method = "fdr") # Also, p.adjust(pVals$raw, method = "BH")
 ```
 
-I hope that this tutorial and the implementation of some p Value correction
-methods help you understand the reasons why we perform, what we lose and what
-we gain by performing each of them. 
+I hope that this (hopefully brief) tutorial and the implementation of some p 
+Value correction methods help you understand the reasons why we perform, 
+how it is done, what we lose and what we gain by performing each of them. 
 
-A special note has to be made with the use of the \alpha = 0.05 threshold, 
-here is only used for illustrative purposes,
+> A special note has to be made with the use of the \alpha = 0.05 threshold.
+Here is only used for illustrative purposes,
 the interpretaion of a p Value **passing or not passing a certain**
 **threshold** for a result being "statistically significant" should should not 
 be done without care and blind to the size effects. A more thorough discussion
-in this matter can be followed in one of the most popular articles in 2019 as 
+in this matter can be followed in the 2nd most popular article of 2019, as 
 ranked by Altmetric [Scientists rise up against statistical significance](https://www.altmetric.com/top100/2019/?details=57358237).
 
 # References
@@ -346,4 +401,4 @@ multiple testing." Journal of the Royal statistical society: series B (Methodolo
 [URL](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.2517-6161.1995.tb02031.x)
 * [Wikipedia: Family-wise Error Rate](https://en.wikipedia.org/wiki/Family-wise_error_rate)
 * [Wikipedia: False Dicovery Rate](https://en.wikipedia.org/wiki/False_discovery_rate)
-* [Video: False Discovery Rates, FDR, clearly explained by Statquest](https://youtu.be/K8LQSvtjcEo)
+* [Recommended video: False Discovery Rates, FDR, clearly explained by Statquest](https://youtu.be/K8LQSvtjcEo)
