@@ -1,0 +1,266 @@
+Tutorial # 13
+========================================================
+author: Rstaff_2020
+width: 1920
+height: 1080
+date: 6/February/2020
+autosize: T
+
+<style>
+.xs-code pre code {font-size: 0.8em;}
+.s-code pre code {font-size: 1em;}
+.m-code pre code {font-size: 1.2em;}
+.l-code pre code {font-size: 1.5em;}
+</style>
+
+Weekly Exercise Solution
+========================
+
+
+Install Packages
+=================
+Run the following code to install all packages necessary to follow the tutorial.
+
+```{r}
+# Load/install Bioconductor packages
+installLoad_BioC <- Vectorize(function(package){
+    if (!require(package, character.only = T)) {
+        if(R.version$minor %>% as.numeric() >= 3.5){
+            if (!requireNamespace("BiocManager", quietly = TRUE)){
+                installLoad_CRAN("BiocManager")
+            }
+            BiocManager::install(package)
+            library(package, character.only = T, quietly = T)
+        }
+        if(R.version$minor %>% as.numeric() < 3.5){
+            source("https://bioconductor.org/biocLite.R")
+            biocLite(package, ask = F)
+            library(package, character.only = T, quietly = T)
+        }
+    }
+}, "package")
+```
+
+---
+
+```{r}
+# Load/install CRAN packages
+installLoad_CRAN <- Vectorize(function(package){
+    if (!require(package, character.only = T)) {
+        install.packages(package, dependencies = TRUE, 
+                         repos = "http://cran.us.r-project.org")
+        library(package, character.only = T, quietly = T)
+    }
+}, "package")
+
+CRAN_packs <- c("magrittr", "BiocManager")
+BIOC_packs <- c("graph", "Rgraphviz", "RBGL", "org.Hs.eg.db", "RCy3")
+dummy <- installLoad_CRAN(CRAN_packs)
+dummy <- installLoad_BioC(BIOC_packs)
+```
+
+Graph problems 1
+================
+## Why graphs?
+
+* Graphs are abstract mathematical representations of real systems.
+* They allow us to apply mathematical tools to understand their structure,
+the arrangement of their components, also called "topology".
+
+## Seven Bridges of Konigsberg
+
+A classic problem that marked the beginning of the research field known as graph theory.
+
+The city of Konigsberg in Prussia (now Kaliningrad, Russia) was set on both 
+sides of the Pregel River, and included two large islands-Kneiphof and 
+Lomse-which were connected to each other, or to the two mainland portions of 
+the city, by seven bridges. The problem was to devise a walk through the city 
+that would cross each of those bridges once and only once.
+
+---
+
+![](Konigsberg.jpg)
+
+
+Graph problems 1.2
+================
+Leonhard Euler 15 April 1707 - 18 September 1783) was a Swiss polymath that 
+came with a definite answer for this problem.
+
+By way of abstracting the Seven Bridges of Konigsberg problem into an
+abstract representation was able to notice that the only important feature of a
+route is the sequence of bridges crossed. 
+
+And that the only way to transverse a land mass (node) is entering through a 
+bridge (link) and exiting by another (link), only except at the start and 
+ending points.
+
+The only way a network can be traversed completely, using each link
+once (now known as Eulerian path), is by having even number of links in all 
+nodes, only allowing exception for the starting and ending nodes.
+
+![](eulerBridges_2.JPG)
+
+---
+
+![](Leonhard_Euler.jpg)
+
+Graph problems 2
+================
+## Sequence alignment and de Bruijn Graphs
+
+De bruijin graphs are graphs in which nodes are words or sequences, and links
+exist between them only if they where found in the same sequence.
+
+![](db_example.JPG)
+
+As genomes are composed of very long sequences and the only data we can retrieve
+from them are short reads we need a way to merge all this small reads into a 
+long sequence. 
+
+For this problem De Bruijn graphs and Eulerian paths offer a very elegant solution.
+
+---
+![](Nicolaas_de_Bruijn.jpg)
+
+Nicolaas Govert de Bruijn (9 July 1918 - 17 February 2012) Dutch mathematician.
+
+De Bruijn Graph assembly by Ben Langmead [Slides](https://www.cs.jhu.edu/~langmea/resources/lecture_notes/assembly_dbg.pdf)
+
+
+Intro 1
+=======
+# Graphs aka Networks
+A **graph** is a set of nodes (aka *vertices*) and links (*aka edges*)
+
+* **Nodes** are the fundamental units of graphs
+* **Links** are relationships shared between **pairs** of nodes.
+* **Cluster**, loosely, is a group of nodes that share a similar place or 
+characteristics in the graph, that distinguish them from other groups of nodes.
+* **Connected component**, or simply "component", is a group of nodes that share at least one link between them.
+
+---
+
+![](stringr_example.JPG)
+
+**[STRING-DB Protein interactions database](https://string-db.org/cgi/input.pl?sessionId=ZeHj6Qj7jom6&input_page_show_search=on)**
+
+[CDC15 Network, Sacharomyces cerevisiae](https://string-db.org/cgi/network.pl?taskId=epi6be0RsNEm)
+
+
+Real world data EXERCISE
+===================
+# Domain co-ocurrence network
+
+```{r}
+# Read the data
+hs.prot = read.csv("../../../Rcourse2020_students/DATASETS/human_proteome_2020.csv",
+                   stringsAsFactors=FALSE)
+RES = select(org.Hs.eg.db, 
+             columns=c("UNIPROT", "PFAM"), 
+             keytype = c("UNIPROT"), 
+             keys = hs.prot$uniprotswissprot)
+
+## Filtering undefined domains and keeping unique pairs
+RES = RES[ which(RES$PFAM !=""),]
+RES = unique(RES[,c(1,2)])
+
+# Then, generate domain-domain interaction matrix
+RES.sp = split(RES$PFAM, RES$UNIPROT)
+
+```
+
+---
+
+```{r}
+RES.list = sapply(RES.sp, 
+                  function(x){ 
+                    if(length(x)>1){
+                      return(combn(x,2))}
+                    else {return( rbind(x[1],"alone"))
+                    } 
+                  })
+RES.mat = matrix(unlist(RES.list), ncol=2, byrow=TRUE)
+RES.mat = unique(RES.mat)
+# Remove the "alone" nodes
+remov <- union(RES.mat[,1] %>% equals("alone") %>% which,
+               RES.mat[,2] %>% equals("alone") %>% which)
+FIN.mat <- RES.mat[-remov,]
+# Removing duplicated pairs
+dat.sort = t(apply(FIN.mat, 1, sort))
+FIN.mat <- FIN.mat[!duplicated(dat.sort),]
+# Making graphNEL object
+RES.net = ftM2graphNEL(cbind(as.vector(FIN.mat[,1]), as.vector(FIN.mat[,2])),
+                       edgemode = "undirected")
+```
+
+Applying function in networks
+==================
+```{r}
+# Degree
+deg <- degree(RES.net)
+head(deg)
+
+# Shortest paths matrix
+allP <- johnson.all.pairs.sp(RES.net)
+allP[1:3, 1:3]
+
+```
+
+---
+
+```{r}
+# Clustering Coeff
+clCoeff <- clusteringCoef(RES.net)
+clCoeff
+
+## Find isolated components
+isolComp <- connectedComp(RES.net)
+length(isolComp)
+```
+
+
+Plotting networks 
+================================
+## Plotting using RGraphviz
+Ploting this network using RGraphviz is not practical. There is when specialized
+programs like Cytoscape come to play very well.
+
+```{r}
+# This will crash or take too much time unless you have a super-powerful computer
+# DO NOT RUN THIS CODE! YOU'VE BEEN WARNED.
+# par(mfcol=c(1,3))
+# plot(RES.net, "fdp", main="fdp")
+# plot(RES.net, "circo", main="circo")
+# plot(RES.net, "dot", main="dot")
+# par(mfcol=c(1,1))
+```
+
+---
+## Importing to Cytoscape
+
+**For running this cytoscape has to be already open!**
+
+```{r, eval = FALSE}
+createNetworkFromGraph(RES.net, title= 'domain network', collection='Example')
+```
+
+
+Cytoscape basic graph analysis and manipulation
+===============================================
+
+* Select nodes
+* Select neighboring nodes
+* Moving nodes
+* Creating subgraphs
+* Network analyzer
+* Visualize parameters
+* Changing visualization parameters
+* Layouts
+
+---
+![](cytoLogo.png)
+
+The end
+=======
+# FIN
