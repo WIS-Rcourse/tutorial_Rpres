@@ -212,6 +212,9 @@ pfamNet = graph_from_edgelist(RES.mat, directed = FALSE)
 write.table(RES.mat, file = "pfamNet.tsv", sep = "\t", quote = F, row.names = F, col.names = F)
 ```
 
+## Let's have a brief tour through some of the main functions of **igraph**!
+
+And go through the last weekly exercise.
 
 Cytoscape basic graph analysis and manipulation
 ===============================================
@@ -227,6 +230,7 @@ Cytoscape basic graph analysis and manipulation
 
 ---
 ![](cytoLogo.png)
+
 
 The end
 =======
